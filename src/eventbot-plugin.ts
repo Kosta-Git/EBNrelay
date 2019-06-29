@@ -1,28 +1,38 @@
 import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket } from 'nrelay';
 import { Movements } from './movements/Movements';
 import { Realm } from './data-types/Realm';
+import { Spacial } from './maths/Spacial';
+import { JsonManager } from './json/JsonManager';
+import { ShotInfo } from './data-types/ShotInfo';
 
 @Library({
   name: 'Event Bot',
   author: 'Kosta & RealmServices',
 })
 class EventBotPlugin {
-  private NexusWay  = new WorldPosData(107, 160.5);
-  private Move      = new Movements();
-  private bestRealm = new Realm( new WorldPosData(0, 0), -1, "init" );
+  private NexusWay     = new WorldPosData(107, 160.5);
+  private Move         = new Movements();
+  private bestRealm    = new Realm( new WorldPosData(0, 0), -1, "init" );
   private lookForRealm = false;
   private lock         = false;
   private isInNexus    = true;
+  private entities     = new Map<string, Array<ShotInfo>>();
+
+  constructor() {
+    Logger.log( "Event Bot", `Started loading entities...` );
+    this.entities = JsonManager.InitializeEnemies();
+    Logger.log( "Event Bot", `Done loading ${this.entities.size}!` );
+  }
 
   @PacketHook()
   public onNewTickPacket( client: Client, newTickPacket: NewTickPacket ): void {
     if ( client.mapInfo.name == "Nexus" ) {
-      if( !this.isOnPos(client.worldPos, new WorldPosData(107, 132)) && !this.lock ) {
+      if( !Spacial.isOnPos(client.worldPos, new WorldPosData(107, 132)) && !this.lock ) {
         client.nextPos.push(this.NexusWay);
         client.nextPos.push( new WorldPosData(107, 132) );
         this.lock = true;
       } else {
-        if(!this.isOnPos(client.worldPos, this.bestRealm.pos))
+        if(!Spacial.isOnPos(client.worldPos, this.bestRealm.pos))
           this.getOutOfNexus( client );
       }
     }
@@ -43,22 +53,6 @@ class EventBotPlugin {
     if ( this.bestRealm.players != -1 ) {
       client.nextPos.push( this.bestRealm.pos );
     }
-  }
-
-  private getPos( client: Client ): any {
-    var ppos = client.playerData.worldPos.clone();
-    ppos.x   = Math.round(ppos.x);
-    ppos.y   = Math.round(ppos.y);
-
-    return ppos;
-  }
-
-  private isOnPosNumber( x: number, y: number ): boolean {
-    return Math.abs(x - y) <= 1;
-  }
-
-  private isOnPos( a: any, b: any ): boolean {
-    return Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
   }
 
   private findBestRealm( data: ObjectData[] ) : Realm {

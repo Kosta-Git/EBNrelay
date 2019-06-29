@@ -88,4 +88,8 @@ export class Vector2D {
     public static DivScalar( a: Vector2D, b: number ) : Vector2D {
         return new Vector2D( a.x / b, a.y / b );
     }
+
+    public static Vectorize( a: Vector2D, b: Vector2D ): Vector2D {
+        return Vector2D.SubVector( b, a );
+    }
 }

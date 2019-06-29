@@ -1,4 +1,6 @@
-import { Vector2D } from './Vector2D'; 
+import { Vector2D } from './Vector2D';
+import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket } from 'nrelay';
+
 
 export class Spacial { 
     public static PolarToCart( rho: number, theta: number ) : Vector2D {
@@ -49,5 +51,21 @@ export class Spacial {
 
     public static GetDist2D( a: Vector2D, b: Vector2D) : number {
             return Math.sqrt( Math.pow( b.x - a.x, 2 ) + Math.pow( b.y - a.y, 2 ) );
+    }
+
+    public static getPos( client: Client ): any {
+        var ppos = client.playerData.worldPos.clone();
+        ppos.x   = Math.round(ppos.x);
+        ppos.y   = Math.round(ppos.y);
+    
+        return ppos;
+    }
+
+    public static isOnPosDelta( x: number, y: number ): boolean {
+        return Math.abs(x - y) <= 1;
+    }
+    
+    public static isOnPos( a: any, b: any ): boolean {
+        return Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
     }
 }
