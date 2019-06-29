@@ -1,0 +1,5 @@
+Project generated on: Sat Jun 29 2019 16:00:52 GMT+0200 (Central European Summer Time)
+Generated using nrelay-cli version: 1.6.0
+
+This file tells the nrelay CLI that this folder contains an nrelay project.
+Removing it may cause difficulties when trying to use the nrelay cli to interact with this project.
