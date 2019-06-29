@@ -57,7 +57,7 @@ export class Vector2D {
     }
 
     // Static overloads
-    public static AddVectors( a : Vector2D, b: Vector2D ) : Vector2D  {
+    public static AddVector( a : Vector2D, b: Vector2D ) : Vector2D  {
         return new Vector2D( a.x + b.x, a.y + b.y );
     }
 
