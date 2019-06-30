@@ -22,7 +22,7 @@ class EventBotPlugin {
   constructor() {
     Logger.log( "Event Bot", `Started loading entities...` );
     this.entities = JsonManager.InitializeEnemies();
-    Logger.log( "Event Bot", `Done loading ${this.entities.size}!` );
+    Logger.log( "Event Bot", `Done loading ${this.entities.size} entities!` );
   }
 
   @PacketHook()
