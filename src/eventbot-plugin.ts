@@ -1,28 +1,67 @@
-import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket, UsePortalPacket, MapInfoPacket } from 'nrelay';
+import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket, UsePortalPacket, MapInfoPacket, EnemyShootPacket } from 'nrelay';
 import { Movements } from './movements/Movements';
 import { Realm } from './data-types/Realm';
 import { Spacial } from './maths/Spacial';
 import { JsonManager } from './json/JsonManager';
 import { ShotInfo } from './data-types/ShotInfo';
+import { Shot } from './data-types/Shot';
+import { Vector2D } from './maths/Vector2D';
+import { Dodger } from './dodger/Dodger';
 
 @Library({
   name: 'Event Bot',
   author: 'Kosta & RealmServices',
 })
 class EventBotPlugin {
-  private NexusWay     = new WorldPosData(107, 160.5);
-  private Move         = new Movements();
-  private bestRealm    = new Realm( new WorldPosData(0, 0), -1, "init", 0 );
-  private lookForRealm = false;
-  private lock         = false;
-  private isInNexus    = true;
-  private sendPortal   = false;
-  private entities     = new Map<string, Array<ShotInfo>>();
+  private NexusWay      = new WorldPosData(107, 160.5);
+  private Move          = new Movements();
+  private bestRealm     = new Realm( new WorldPosData(0, 0), -1, "init", 0 );
+  private lookForRealm  = false;
+  private lock          = false;
+  private isInNexus     = true;
+  private sendPortal    = false;
+  private entities      = new Map<number, Array<ShotInfo>>();
+  private loadedEnemies = new Map<number, number>();
 
   constructor() {
     Logger.log( "Event Bot", `Started loading entities...` );
     this.entities = JsonManager.InitializeEnemies();
     Logger.log( "Event Bot", `Done loading ${this.entities.size} entities!` );
+  }
+
+  @PacketHook()
+  public onTextPacket(client: Client, txt: TextPacket): void {
+    if( txt.text == "tp" ) {
+      const replyTextPacket = new PlayerTextPacket();
+      replyTextPacket.text = '/teleport ' + txt.name;
+      client.io.send(replyTextPacket);
+    }
+  }
+
+  @PacketHook()
+  public onEnemyShoot( client: Client, shot: EnemyShootPacket ): void {
+    if( !( this.entities.has( this.loadedEnemies.get( shot.ownerId ) ) ) ) return;
+    
+    var fired = new Shot( 
+        shot.startingPos.x,
+        shot.startingPos.y,
+        shot.angle,
+        shot.numShots,
+        shot.angleInc,
+        this.entities.get( this.loadedEnemies.get( shot.ownerId ) ),
+        shot.bulletId
+      );
+
+      var ctPlayer = new Vector2D( client.worldPos.x, client.worldPos.y );
+      var ye = Spacial.IsInLineWithDelta( ctPlayer, fired.GetPos(5), 0.5 );
+      
+      if( Spacial.IsInLineWithDelta( ctPlayer, fired.GetPos(5), 0.5 ) ) {
+        var ctDodge = Spacial.PolarToCartVec( Dodger.DodgeDirection( client, fired.GetPos(5) ) );
+        var nextPos = Vector2D.AddVector( ctPlayer, ctDodge ).GetWorldPos();
+
+        Logger.log( "Event Bot", `Moving to ${nextPos}` );
+        client.nextPos.push( nextPos );
+      }
   }
 
   @PacketHook()
@@ -38,6 +77,7 @@ class EventBotPlugin {
         } else if ( Spacial.isOnPos(client.worldPos, this.bestRealm.pos) ) {
           this.isInNexus  = false;
           this.sendPortal = true;
+          this.lock       = false;
         }
       }
     }
@@ -47,15 +87,13 @@ class EventBotPlugin {
   public onMapInfo( client: Client, mapInfoPacket: MapInfoPacket ) {
     this.isInNexus = mapInfoPacket.name == "Nexus" ? true : false;
 
-    if ( this.isInNexus ) {
-      client.autoNexusThreshold = 0;
-    } else {
-      client.autoNexusThreshold = 20;
-    }
+    client.autoNexusThreshold = 0.2;
   }
 
   @PacketHook()
   public onUpdatePacket( client: Client, updatePacket: UpdatePacket ): void {
+    this.enemyManager( updatePacket.newObjects, updatePacket.drops );
+
     if ( this.isInNexus ) {
       var realm = this.findBestRealm(updatePacket.newObjects);
 
@@ -97,6 +135,22 @@ class EventBotPlugin {
     return best;
   }
 
+  private enemyManager( newObj: ObjectData[], droppedObj: number[] ): void {
+    newObj.forEach( obj => {
+      if( this.entities.has(obj.objectType) ) {
+        if ( !this.loadedEnemies.has(obj.status.objectId) ) {
+          this.loadedEnemies.set( obj.status.objectId, obj.objectType );
+        }
+      }
+    });
+
+    droppedObj.forEach( obj => {
+      if( this.entities.has(obj) ) {
+        this.loadedEnemies.delete( obj );
+      }
+    });
+  }
+
   private UsePortal( client: Client,objId: number ) {
     Logger.log( "Event Bot", `Connected to realm ${this.bestRealm.name}` );
 
@@ -105,5 +159,11 @@ class EventBotPlugin {
     usePortal.propagate = true;
 
     client.io.send( usePortal );
+  }
+
+  private OwnerIdToObjId( id: number ): number {
+    if( this.loadedEnemies.has(id) ) {
+      return this.loadedEnemies.get(id);
+    }
   }
 }

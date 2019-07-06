@@ -1,3 +1,5 @@
+import { WorldPosData } from "nrelay";
+
 export class Vector2D {
     public x: number;
     public y: number;
@@ -13,6 +15,10 @@ export class Vector2D {
 
     public GetPerpendicular() : Vector2D {
         return new Vector2D( this.y, -this.x );
+    }
+
+    public GetWorldPos() : WorldPosData {
+        return new WorldPosData( this.x, this.y );
     }
 
     // Overloads

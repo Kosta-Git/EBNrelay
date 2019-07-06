@@ -1,44 +1,41 @@
-import { Environment, Logger, Projectile } from 'nrelay';
+import { Environment, Logger, DamagePacket } from 'nrelay';
 import { Entity } from 'nrelay/lib/models/entity';
 import { readFile, readFileSync } from 'fs';
 import { ShotInfo } from '../data-types/ShotInfo';
+import { RootObject, Projectile, ProjectileItem, ObjectItem } from './json-interfaces';
 
 export class JsonManager {
-    public static InitializeEnemies() : Map<string, Array<ShotInfo>> {
+    public static InitializeEnemies(): Map<number, Array<ShotInfo>> {
         var data     = readFileSync( "/home/kosta/Nextcloud/Coding/rotmg-projects/eventbot/src/json/Objects.json" );
         var parsed   = JSON.parse( data.toString() );
         var parsed   = parsed["Object"];
-        var entities = new Map<string, Array<ShotInfo>>();
-        var enemId   = new Array<string>();
+        var entities = new Map<number, Array<ShotInfo>>();
+        var enemId   = new Array<number>();
 
 
-        for ( var prop in parsed ) {
-            for ( var entVal in parsed[prop] ) {
-                if ( entVal == "Enemy" ) {
-                    enemId.push( prop );
-                }
-            }
-        }
-
-        enemId.forEach(function(id){
-            try {
+        parsed.forEach( (element: any) => {
+            if( element.Enemy !== undefined ) {
                 var shots = Array<ShotInfo>();
-                for ( var shot in parsed[id]["Projectile"] ) {
-                    if ( 
-                        parsed[id]["Projectile"][shot]["Damage"] !== undefined 
-                        || parsed[id]["Projectile"][shot]["Speed"] !== undefined 
-                        || parsed[id]["Projectile"][shot]["LifetimeMS"] !== undefined 
-                        ) {
-                            var dmg = Number( parsed[id]["Projectile"][shot]["Damage"]     );
-                            var spd = Number( parsed[id]["Projectile"][shot]["Speed"]      ) / 10;
-                            var lft = Number( parsed[id]["Projectile"][shot]["LifetimeMS"] );
-
-                            shots.push( new ShotInfo( dmg, spd, lft ) );
-                        }
+                try {
+                    element.Projectile.forEach( (proj: any) => {
+                        var dmg = Number( proj.Damage );
+                        var spd = Number( proj.Speed ) / 10;
+                        var lft = Number( proj.LifetimeMS );
+                        shots.push( new ShotInfo( dmg, spd, lft ) );
+                    } )
+                } catch {
+                    if( element.Projectile != undefined ) {
+                        var dmg = Number( element.Projectile.Damage );
+                        var spd = Number( element.Projectile.Speed ) / 10;
+                        var lft = Number( element.Projectile.LifetimeMS );
+                        
+                        shots.push( new ShotInfo( dmg, spd, lft ) );
+                    }
                 }
-                entities.set( id, shots );
-            } catch {
 
+                if ( shots.length > 0 ) {
+                    entities.set( parseInt( element.type, 16 ), shots );
+                }
             }
         });
 
