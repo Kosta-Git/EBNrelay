@@ -21,6 +21,11 @@ export class JsonManager {
                         var dmg = Number( proj.Damage );
                         var spd = Number( proj.Speed ) / 10;
                         var lft = Number( proj.LifetimeMS );
+
+                        if( this.isU(dmg) || this.isU( spd ) || this.isU( lft ) ) {
+                            Logger.log("EB", "BRUH")
+                        }
+
                         shots.push( new ShotInfo( dmg, spd, lft ) );
                     } )
                 } catch {
@@ -28,6 +33,10 @@ export class JsonManager {
                         var dmg = Number( element.Projectile.Damage );
                         var spd = Number( element.Projectile.Speed ) / 10;
                         var lft = Number( element.Projectile.LifetimeMS );
+
+                        if( this.isU(dmg) || this.isU( spd ) || this.isU( lft ) ) {
+                            Logger.log("EB", "BRUH")
+                        }
                         
                         shots.push( new ShotInfo( dmg, spd, lft ) );
                     }
@@ -40,5 +49,9 @@ export class JsonManager {
         });
 
         return entities;
+    }
+
+    private static isU( d: any ): boolean {
+        return d === undefined;
     }
 }

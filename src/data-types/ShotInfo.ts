@@ -10,6 +10,10 @@ export class ShotInfo {
     }
 
     public toString = () : string => {
+        if ( this.speed === undefined ) {
+            return "fuck";
+        }
+
         return `${this.damage}, ${this.speed}, ${this.lifetime}`;
     }
 }

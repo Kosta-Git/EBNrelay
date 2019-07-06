@@ -37,16 +37,17 @@ export class Spacial {
             return ( toCheck.y - line[0].y ) / ( toCheck.x - line[0].x ) == ( line[1].y - line[0].y ) / ( line[1].x - line[0].x );
     }
 
-    public static IsInLineWithDelta( toCheck: Vector2D, line: Array<Array<Vector2D>>, delta=0.2 ) : boolean {
-        line.forEach( function (shotTrail) {
-            var a = ( toCheck.y - shotTrail[ 0 ].y ) / ( toCheck.x - shotTrail[ 0 ].x );
-            var b = ( shotTrail[ 1 ].y - shotTrail[ 0 ].y ) / ( shotTrail[ 1 ].x - shotTrail[ 0 ].x );
+    public static IsInLineWithDelta( toCheck: Vector2D, line: Array<Array<Vector2D>>, delta: number = 0.2 ) : boolean {
+        var r = false;
+        
+        line.forEach( (shotTrail) => {
+            var a = Math.abs( toCheck.y - shotTrail[ 0 ].y ) / ( toCheck.x - shotTrail[ 0 ].x );
+            var b = Math.abs( shotTrail[ 1 ].y - shotTrail[ 0 ].y ) / ( shotTrail[ 1 ].x - shotTrail[ 0 ].x );
 
-            if ( Math.abs( a - b ) < delta )
-                return true;
+            if ( Math.abs( a - b ) < delta ) r = true;
         } );
 
-        return false;
+        return r;
     }
 
     public static GetDist2D( a: Vector2D, b: Vector2D) : number {

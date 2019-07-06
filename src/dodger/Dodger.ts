@@ -18,7 +18,7 @@ export class Dodger {
             generalDirection += dir.y;
         });
 
-        return new Vector2D( this.Mover.getTPS( client ), generalDirection );
+        return new Vector2D( this.Mover.getTPS( client ) * ( Math.random() * 2 ), generalDirection );
     }
 
     private static GetOrthoVec( trail: Array<Vector2D> ): Vector2D {

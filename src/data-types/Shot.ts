@@ -30,7 +30,7 @@ export class Shot {
         this._shotId = id;
     }
 
-    public GetPos( ticks: number = 1 ): Array<Array<Vector2D>> {
+    public GetPos( ticks: number = 2 ): Array<Array<Vector2D>> {
         var positions = new Array<Array<Vector2D>>();
 
         if ( ticks > this.GetMaxTicksForShot() ) {
@@ -40,10 +40,17 @@ export class Shot {
         for ( var nbShots = 0; nbShots < this._nbProj; ++nbShots ) {
             var currentShot = new Array<Vector2D>();
             for( var i = 0; i < ticks; ++i ) {
-                var acceleration = Spacial.PolarToCart( 
-                    this._direction + nbShots * this._directionInc,
-                     this._info[ this._shotId ].speed
-                 );
+                var acceleration;
+
+                try {
+                    acceleration = Spacial.PolarToCart( 
+                        this._direction + nbShots * this._directionInc,
+                        this._info[ this._shotId ].speed
+                    );
+                } catch ( e ) {
+                    Logger.log( "EB", `HUH OH ${e}` );
+                    return;
+                }
 
                  acceleration.MulScalar( i );
 
@@ -56,10 +63,18 @@ export class Shot {
     }
 
     private GetMaxTicksForShot(): number {
+        if( this._info[this._shotId] === undefined ) {
+            return 2;
+        }
+
         return Math.ceil( this._info[this._shotId].lifetime / this._tickTime );
     }
 
     public GetMaxTime( id: number ): number {
+        if( this._info[this._shotId] === undefined ) {
+            return 1000;
+        }
+
         return this._info[ id ].lifetime;
     }
 }

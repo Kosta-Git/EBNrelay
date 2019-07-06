@@ -39,29 +39,37 @@ class EventBotPlugin {
   }
 
   @PacketHook()
-  public onEnemyShoot( client: Client, shot: EnemyShootPacket ): void {
-    if( !( this.entities.has( this.loadedEnemies.get( shot.ownerId ) ) ) ) return;
+  public onEnemyShootPacket( client: Client, enemyShootPacket: EnemyShootPacket ): void {
+    if( !( this.entities.has( this.loadedEnemies.get( enemyShootPacket.ownerId ) ) ) ) return;
+    if ( client == undefined ) return;
     
+    Logger.log( "EB esp", `${enemyShootPacket.startingPos.x}: ${enemyShootPacket.startingPos.y}` )
+    var pos = enemyShootPacket.startingPos.clone();
+    var player = client.worldPos.clone();
+
+
     var fired = new Shot( 
-        shot.startingPos.x,
-        shot.startingPos.y,
-        shot.angle,
-        shot.numShots,
-        shot.angleInc,
-        this.entities.get( this.loadedEnemies.get( shot.ownerId ) ),
-        shot.bulletId
+        pos.x,
+        pos.y,
+        enemyShootPacket.angle,
+        enemyShootPacket.numShots,
+        enemyShootPacket.angleInc,
+        this.entities.get( this.loadedEnemies.get( enemyShootPacket.ownerId ) ),
+        enemyShootPacket.bulletType
       );
 
-      var ctPlayer = new Vector2D( client.worldPos.x, client.worldPos.y );
-      var ye = Spacial.IsInLineWithDelta( ctPlayer, fired.GetPos(5), 0.5 );
+      var ctPlayer = new Vector2D( player.x, player.y );
+      var predicted = fired.GetPos(5);
       
-      if( Spacial.IsInLineWithDelta( ctPlayer, fired.GetPos(5), 0.5 ) ) {
-        var ctDodge = Spacial.PolarToCartVec( Dodger.DodgeDirection( client, fired.GetPos(5) ) );
+      Logger.log( "EB", `${Spacial.IsInLineWithDelta( ctPlayer, predicted, 1 )}` );
+
+      //if( Spacial.IsInLineWithDelta( ctPlayer, predicted, 0.5 ) ) {
+        var ctDodge = Spacial.PolarToCartVec( Dodger.DodgeDirection( client, predicted ) );
         var nextPos = Vector2D.AddVector( ctPlayer, ctDodge ).GetWorldPos();
 
-        Logger.log( "Event Bot", `Moving to ${nextPos}` );
+        Logger.log( "Event Bot", `Moving to ${nextPos.x}:${nextPos.y}` );
         client.nextPos.push( nextPos );
-      }
+      //}
   }
 
   @PacketHook()
