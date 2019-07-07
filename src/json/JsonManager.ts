@@ -5,6 +5,12 @@ import { ShotInfo } from '../data-types/ShotInfo';
 import { RootObject, Projectile, ProjectileItem, ObjectItem } from './json-interfaces';
 
 export class JsonManager {
+    private static _names = new Map<number, string> ();
+
+    public static IdToName( id: number ): string {
+        return this._names.get(id);
+    }
+
     public static InitializeEnemies(): Map<number, Array<ShotInfo>> {
         var data     = readFileSync( "/home/kosta/Nextcloud/Coding/rotmg-projects/eventbot/src/json/Objects.json" );
         var parsed   = JSON.parse( data.toString() );
@@ -15,6 +21,7 @@ export class JsonManager {
 
         parsed.forEach( (element: any) => {
             if( element.Enemy !== undefined ) {
+                this._names.set( parseInt( element.type, 16 ), element.id );
                 var shots = Array<ShotInfo>();
                 try {
                     element.Projectile.forEach( (proj: any) => {

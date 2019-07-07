@@ -7,7 +7,8 @@
   "dependencies": {
     "@types/xml2js": "^0.4.4",
     "json-schema-to-typescript": "^6.1.3",
-    "nrelay": "^8.6.0"
+    "nrelay": "^8.7.0",
+    "yargs": "^13.2.4"
   },
   "devDependencies": {
     "@types/node": "^12.0.12",

@@ -1,4 +1,4 @@
-import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket, UsePortalPacket, MapInfoPacket, EnemyShootPacket } from 'nrelay';
+import { Client, ObjectData, UpdatePacket, NewTickPacket, Library, PacketHook, PlayerTextPacket, TextPacket, WorldPosData, Logger, RealmHeroesLeftPacket, UsePortalPacket, MapInfoPacket, EnemyShootPacket, QuestObjectIdPacket, LoadPacket } from 'nrelay';
 import { Movements } from './movements/Movements';
 import { Realm } from './data-types/Realm';
 import { Spacial } from './maths/Spacial';
@@ -7,6 +7,7 @@ import { ShotInfo } from './data-types/ShotInfo';
 import { Shot } from './data-types/Shot';
 import { Vector2D } from './maths/Vector2D';
 import { Dodger } from './dodger/Dodger';
+import { EventEntity } from './data-types/EventEntity';
 
 @Library({
   name: 'Event Bot',
@@ -22,6 +23,9 @@ class EventBotPlugin {
   private sendPortal    = false;
   private entities      = new Map<number, Array<ShotInfo>>();
   private loadedEnemies = new Map<number, number>();
+  private quest         = -1;
+  private questEntity   = new EventEntity();
+  private hasValidQuest = false;
 
   constructor() {
     Logger.log( "Event Bot", `Started loading entities...` );
@@ -39,11 +43,15 @@ class EventBotPlugin {
   }
 
   @PacketHook()
+  public onQuestObjectIdPacket( client: Client, quest: QuestObjectIdPacket ): void {
+    this.quest = quest.objectId;
+  }
+
+  @PacketHook()
   public onEnemyShootPacket( client: Client, enemyShootPacket: EnemyShootPacket ): void {
     if( !( this.entities.has( this.loadedEnemies.get( enemyShootPacket.ownerId ) ) ) ) return;
     if ( client == undefined ) return;
     
-    Logger.log( "EB esp", `${enemyShootPacket.startingPos.x}: ${enemyShootPacket.startingPos.y}` )
     var pos = enemyShootPacket.startingPos.clone();
     var player = client.worldPos.clone();
 
@@ -60,16 +68,13 @@ class EventBotPlugin {
 
       var ctPlayer = new Vector2D( player.x, player.y );
       var predicted = fired.GetPos(5);
-      
-      Logger.log( "EB", `${Spacial.IsInLineWithDelta( ctPlayer, predicted, 1 )}` );
 
-      //if( Spacial.IsInLineWithDelta( ctPlayer, predicted, 0.5 ) ) {
+      if( Spacial.IsInLineWithDelta( ctPlayer, predicted, 0.5 ) ) {
         var ctDodge = Spacial.PolarToCartVec( Dodger.DodgeDirection( client, predicted ) );
         var nextPos = Vector2D.AddVector( ctPlayer, ctDodge ).GetWorldPos();
 
-        Logger.log( "Event Bot", `Moving to ${nextPos.x}:${nextPos.y}` );
         client.nextPos.push( nextPos );
-      //}
+      }
   }
 
   @PacketHook()
@@ -88,6 +93,8 @@ class EventBotPlugin {
           this.lock       = false;
         }
       }
+    } else if ( !this.isInNexus && this.hasValidQuest ) {
+      client.nextPos.push( this.questEntity.pos.GetWorldPos() );
     }
   }
 
@@ -96,6 +103,13 @@ class EventBotPlugin {
     this.isInNexus = mapInfoPacket.name == "Nexus" ? true : false;
 
     client.autoNexusThreshold = 0.2;
+  }
+
+  @PacketHook()
+  public onLoad( client: Client, loadPacket: LoadPacket ): void {
+    this.questEntity = null;
+    this.hasValidQuest = false;
+    this.loadedEnemies.clear();
   }
 
   @PacketHook()
@@ -145,6 +159,17 @@ class EventBotPlugin {
 
   private enemyManager( newObj: ObjectData[], droppedObj: number[] ): void {
     newObj.forEach( obj => {
+      if ( obj.status.objectId == this.quest && !this.hasValidQuest ) {
+        this.questEntity         = new EventEntity();
+        this.questEntity.id      = JsonManager.IdToName( obj.objectType );
+        this.questEntity.objId   = this.quest;
+        this.questEntity.objType = obj.objectType;
+        this.questEntity.pos     = new Vector2D( obj.status.pos.x, obj.status.pos.y );
+
+        this.hasValidQuest       = true;
+        Logger.log( "Event Bot", `Found quest ${this.questEntity.id} at ${this.questEntity.pos.x}, ${this.questEntity.pos.y}` );
+      }
+
       if( this.entities.has(obj.objectType) ) {
         if ( !this.loadedEnemies.has(obj.status.objectId) ) {
           this.loadedEnemies.set( obj.status.objectId, obj.objectType );
