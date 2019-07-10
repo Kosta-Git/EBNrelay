@@ -12,7 +12,7 @@ export class JsonManager {
     }
 
     public static InitializeEnemies(): Map<number, Array<ShotInfo>> {
-        var data     = readFileSync( "/home/kosta/Nextcloud/Coding/rotmg-projects/eventbot/src/json/Objects.json" );
+        var data     = readFileSync( "src/json/Objects.json" );
         var parsed   = JSON.parse( data.toString() );
         var parsed   = parsed["Object"];
         var entities = new Map<number, Array<ShotInfo>>();

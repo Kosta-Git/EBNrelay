@@ -99,14 +99,15 @@ class EventBotPlugin {
   }
 
   @PacketHook()
-  public onMapInfo( client: Client, mapInfoPacket: MapInfoPacket ) {
+  public onMapInfoPacket( client: Client, mapInfoPacket: MapInfoPacket ) {
     this.isInNexus = mapInfoPacket.name == "Nexus" ? true : false;
 
     client.autoNexusThreshold = 0.2;
+    client.autoAim = true;
   }
 
   @PacketHook()
-  public onLoad( client: Client, loadPacket: LoadPacket ): void {
+  public onLoadPacket( client: Client, loadPacket: LoadPacket ): void {
     this.questEntity = null;
     this.hasValidQuest = false;
     this.loadedEnemies.clear();
