@@ -69,4 +69,11 @@ export class Spacial {
     public static isOnPos( a: any, b: any ): boolean {
         return Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
     }
+
+    public static GetAngle( a: Vector2D, b: Vector2D ): number {
+        var deltaY = a.y - b.y;
+        var detlaX = b.x - a.x;
+        var res = this.RadianToDegree( Math.atan2( deltaY, detlaX ) );
+        return res < 0  ? res + 360 : res;
+    }
 }
